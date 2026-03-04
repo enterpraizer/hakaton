@@ -91,7 +91,7 @@ Docker is used as a mock hypervisor to simulate real VM lifecycle management.
 ## DAY 1 — Core Architecture & Multi-Tenant Isolation
 
 ### 1.1 [Dev-2] Tenant, VM, Network, Quota, ResourceUsage Models
-- [ ] **Demonstrates: Multi-tenancy, Resource Control** | ⏱ 3h
+- [x] ✅ **СДЕЛАНО** | **Demonstrates: Multi-tenancy, Resource Control** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -174,7 +174,7 @@ Run: alembic revision --autogenerate -m "add_tenant_vm_network_quota_usage_table
 ---
 
 ### 1.2 [Dev-1] Tenant Middleware + Tenant Context Dependency
-- [ ] **Demonstrates: Multi-tenancy, Row-Level Isolation** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** | **Demonstrates: Multi-tenancy, Row-Level Isolation** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -221,7 +221,7 @@ and pass tenant.id to all service/repository calls for isolation.
 ---
 
 ### 1.3 [Dev-3] Auth: Embed tenant_id in JWT + Tenant Assignment
-- [ ] **Demonstrates: Multi-tenancy, Security** | ⏱ 2h
+- [ ] ⚠️ **ЧАСТИЧНО** — JWT содержит `tenant_id` ✅, `refresh()` переносит его ✅, поле `tenant_id` в `UserRequest` ✅ | но `tenant_service.py` ❌, эндпоинт `POST /auth/tenant` ❌, импорт из `schemas.tenant` не дописан ❌ | **Demonstrates: Multi-tenancy, Security** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -265,7 +265,7 @@ Read src/application/services/auth_service.py fully.
 ---
 
 ### 1.4 [Dev-2] Tenant-Scoped BaseRepository
-- [ ] **Demonstrates: Row-Level Isolation** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `TenantScopedRepository` ✅, `VMRepository` ✅, `NetworkRepository` ✅, `QuotaRepository` ✅, `TenantRepository` ✅, `AuditLogRepository` ✅ | **Demonstrates: Row-Level Isolation** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -350,7 +350,7 @@ Create src/infrastructure/repositories/usage_repository.py:
 ---
 
 ### 1.5 [Dev-4] Hypervisor Service (Docker SDK Mock)
-- [ ] **Demonstrates: Hypervisor Simulation** | ⏱ 3h
+- [ ] ❌ **НЕ СДЕЛАНО** — `hypervisor_service.py` не существует | **Demonstrates: Hypervisor Simulation** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -462,7 +462,7 @@ class HypervisorService:
 ---
 
 ### 1.6 [Dev-5] docker-compose + .env.example + Makefile
-- [ ] **Demonstrates: DevOps** | ⏱ 1h
+- [ ] ⚠️ **ЧАСТИЧНО** — `docker-compose.yaml` есть ✅, `.env.example` есть но значения пустые ⚠️ | Docker socket не смонтирован ❌, `celery-beat` сервис отсутствует ❌, `Makefile` не создан ❌ | **Demonstrates: DevOps** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -527,7 +527,7 @@ Generate Makefile:
 ## DAY 2 — VM Lifecycle, Quota Engine & Networking
 
 ### 2.1 [Dev-4] Quota Service (enforce + track)
-- [ ] **Demonstrates: Resource Distribution Control** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `quota_service.py` не существует | **Demonstrates: Resource Distribution Control** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -591,7 +591,7 @@ class QuotaService:
 ---
 
 ### 2.2 [Dev-4] VM Service + Full Lifecycle
-- [ ] **Demonstrates: Hypervisor, Multi-tenancy, Resource Control** | ⏱ 3h
+- [ ] ❌ **НЕ СДЕЛАНО** — `vm_service.py` стаб ❌, `schemas/vm.py` стаб ❌ | **Demonstrates: Hypervisor, Multi-tenancy, Resource Control** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -677,7 +677,7 @@ Also create src/infrastructure/schemas/vm.py with Pydantic v2:
 ---
 
 ### 2.3 [Dev-1] VM Router (full REST + lifecycle actions)
-- [ ] **Demonstrates: Multi-tenancy, Hypervisor** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `routers/vms.py` стаб | **Demonstrates: Multi-tenancy, Hypervisor** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -711,7 +711,7 @@ Replace stub in src/interfaces/api/routers/vms.py:
 ---
 
 ### 2.4 [Dev-2] Network Service + Router (VPC/Subnet)
-- [ ] **Demonstrates: Multi-tenancy, Networking** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `network_service.py` стаб ❌, `schemas/network.py` стаб ❌, `routers/networks.py` стаб ❌ | `NetworkRepository` ✅ (единственное что готово) | **Demonstrates: Multi-tenancy, Networking** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -754,7 +754,7 @@ Replace stub in src/interfaces/api/routers/networks.py:
 ---
 
 ### 2.5 [Dev-3] Admin Router (Tenant + Quota management)
-- [ ] **Demonstrates: Resource Distribution Control, Multi-tenancy** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `routers/admin.py` стаб ❌, `dependencies/permissions.py` ❌, `schemas/tenant.py` стаб ❌, `schemas/quota.py` стаб ❌ | **Demonstrates: Resource Distribution Control, Multi-tenancy** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -813,7 +813,7 @@ Replace stub in src/interfaces/api/routers/admin.py:
 ---
 
 ### 2.6 [Dev-5] Celery Tasks: VM Status Sync
-- [ ] **Demonstrates: Hypervisor, Background Tasks** | ⏱ 1h
+- [ ] ❌ **НЕ СДЕЛАНО** — в `tasks.py` только `send_confirmation_email` ❌, `beat_schedule` в `celery_config.py` отсутствует ❌ | **Demonstrates: Hypervisor, Background Tasks** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -862,7 +862,7 @@ Add Celery Beat schedule in src/application/services/celery_config.py:
 ## DAY 3 — Monitoring, Security & Production
 
 ### 3.1 [Dev-1] Resource Usage Dashboard Endpoints
-- [ ] **Demonstrates: Resource Control, Monitoring** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `routers/dashboard.py` ❌, `audit_service.py` ❌ | `AuditLog` модель ✅ + `AuditLogRepository` ✅ (единственное что готово) | **Demonstrates: Resource Control, Monitoring** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -913,7 +913,7 @@ Include dashboard_router in app.py.
 ---
 
 ### 3.2 [Dev-3] Security: Rate Limiting + Security Headers
-- [ ] **Demonstrates: Security** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — папка `middleware/` не создана, ни один middleware не реализован | **Demonstrates: Security** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -965,7 +965,7 @@ Add global exception handlers for:
 ---
 
 ### 3.3 [Dev-2] Alembic Migrations for all new models
-- [ ] **Demonstrates: DevOps** | ⏱ 1h
+- [ ] ❌ **НЕ СДЕЛАНО** — существует только init-миграция (`users` таблица), миграция для Tenant/VM/Network/Quota/Usage/AuditLog не создана | **Demonstrates: DevOps** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -998,7 +998,7 @@ Generate a seed data script at src/infrastructure/seed.py:
 ---
 
 ### 3.4 [Dev-4] Integration Tests: Full Tenant Isolation Scenario
-- [ ] **Demonstrates: Multi-tenancy, Security** | ⏱ 3h
+- [ ] ❌ **НЕ СДЕЛАНО** — папка `tests/` не создана | **Demonstrates: Multi-tenancy, Security** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -1054,7 +1054,7 @@ Run: pytest tests/ -v --asyncio-mode=auto -x
 ---
 
 ### 3.5 [Dev-5] GitHub Actions CI + Final OpenAPI Docs
-- [ ] **Demonstrates: DevOps** | ⏱ 2h
+- [ ] ❌ **НЕ СДЕЛАНО** — `.github/workflows/ci.yml` не создан, OpenAPI не настроен | **Demonstrates: DevOps** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
