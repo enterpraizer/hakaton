@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from src.application.services.celery_config import celery_app
 from src.application.services.hypervisor_service import HypervisorService
 from src.infrastructure.models.virtual_machine import VirtualMachine, VMStatus
+from src.infrastructure.models.vm_metrics import VmMetrics  # noqa: F401 — needed for relationship resolution
+from src.infrastructure.models.vm_suggestion import VmSuggestion  # noqa: F401 — needed for relationship resolution
 from src.settings import settings
 
 logger = logging.getLogger(__name__)
