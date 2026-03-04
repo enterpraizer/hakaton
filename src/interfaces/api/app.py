@@ -1,15 +1,22 @@
 from fastapi import FastAPI, Depends, status, HTTPException
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from src.settings import settings
+
 from src.interfaces.api.dependencies.session import get_db
+from src.interfaces.api.middleware.tenant import TenantMiddleware
+from src.interfaces.api.routers import users, auth
+from src.settings import settings
 
 app = FastAPI()
 
+app.add_middleware(TenantMiddleware)
 app.add_middleware(
-    SessionMiddleware,
-    secret_key=settings.secret_key,
+    CORSMiddleware,
+    allow_origins=[settings.frontend_url],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -25,3 +32,6 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE
         )
+
+app.include_router(users.users_router)
+app.include_router(auth.auth_router)
