@@ -7,11 +7,20 @@ from fastapi import Depends, HTTPException, status
 from src.application.services.auth_service import AuthService
 from src.application.services.llm_service import LLMService
 from src.application.services.quota_service import QuotaExceededError
+from src.application.services.suggestion_service import SuggestionService
 from src.application.services.vm_service import VMService
 from src.infrastructure.models.tenant import Tenant
 from src.infrastructure.models.virtual_machine import VMStatus
 from src.infrastructure.schemas.users import UserRequest
-from src.infrastructure.schemas.vm import VMCreate, VMListResponse, VMResponse, VMSuggestRequest, VMSuggestResponse, VMUpdate
+from src.infrastructure.schemas.vm import (
+    SuggestionResponse,
+    VMCreate,
+    VMListResponse,
+    VMResponse,
+    VMSuggestRequest,
+    VMSuggestResponse,
+    VMUpdate,
+)
 from src.interfaces.api.dependencies.tenant import get_current_tenant
 
 vms_router = APIRouter(prefix="/vms", tags=["Virtual Machines"])
@@ -131,3 +140,56 @@ async def update_vm(
             status_code=status.HTTP_400_BAD_REQUEST, detail="No updatable fields provided"
         )
     return await service.update(vm_id=vm_id, tenant_id=tenant.id, **updates)
+
+
+@vms_router.get(
+    "/{vm_id}/suggestions",
+    response_model=list[SuggestionResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_suggestions(
+    vm_id: UUID,
+    current_user: UserRequest = Depends(AuthService.get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    svc: SuggestionService = Depends(),
+) -> list[SuggestionResponse]:
+    """List pending AI optimization suggestions for a VM."""
+    return await svc.get_pending(vm_id=vm_id)
+
+
+@vms_router.post(
+    "/{vm_id}/suggestions/{suggestion_id}/accept",
+    response_model=SuggestionResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def accept_suggestion(
+    vm_id: UUID,
+    suggestion_id: UUID,
+    current_user: UserRequest = Depends(AuthService.get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    svc: SuggestionService = Depends(),
+) -> SuggestionResponse:
+    """Accept an AI suggestion (marks as accepted)."""
+    result = await svc.accept(suggestion_id=suggestion_id, vm_id=vm_id)
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Suggestion not found")
+    return result
+
+
+@vms_router.post(
+    "/{vm_id}/suggestions/{suggestion_id}/dismiss",
+    response_model=SuggestionResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def dismiss_suggestion(
+    vm_id: UUID,
+    suggestion_id: UUID,
+    current_user: UserRequest = Depends(AuthService.get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    svc: SuggestionService = Depends(),
+) -> SuggestionResponse:
+    """Dismiss an AI suggestion."""
+    result = await svc.dismiss(suggestion_id=suggestion_id, vm_id=vm_id)
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Suggestion not found")
+    return result

@@ -142,6 +142,86 @@ def collect_vm_metrics() -> None:
         logger.info("collect_vm_metrics: recorded metrics for %d VMs", len(vms))
 
 
+@celery_app.task(name="analyze_vm_optimizations")
+def analyze_vm_optimizations() -> None:
+    """
+    Periodic task (hourly): for each RUNNING VM, run LLM optimization analysis.
+    Skips VMs that already received a suggestion in the last 24h.
+    """
+    import asyncio
+    from datetime import datetime, timedelta, timezone
+
+    with Session(_sync_engine) as session:
+        vms = session.execute(
+            select(VirtualMachine).where(VirtualMachine.status == VMStatus.RUNNING)
+        ).scalars().all()
+
+        skipped = 0
+        analyzed = 0
+        for vm in vms:
+            # Skip if suggestion created in last 24h (check directly in sync session)
+            from src.infrastructure.models.vm_suggestion import VmSuggestion
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            recent = session.execute(
+                select(VmSuggestion).where(
+                    VmSuggestion.vm_id == vm.id,
+                    VmSuggestion.created_at >= cutoff,
+                ).limit(1)
+            ).scalar_one_or_none()
+
+            if recent:
+                skipped += 1
+                continue
+
+            # Compute averages from last 7 days of metrics
+            from src.infrastructure.models.vm_metrics import VmMetrics
+            import math
+            week_ago = datetime.now(timezone.utc) - timedelta(hours=168)
+            metrics = session.execute(
+                select(VmMetrics).where(
+                    VmMetrics.vm_id == vm.id,
+                    VmMetrics.recorded_at >= week_ago,
+                )
+            ).scalars().all()
+
+            if len(metrics) < 5:
+                skipped += 1
+                continue
+
+            avg_cpu = sum(m.cpu_pct for m in metrics) / len(metrics)
+            avg_ram = sum(m.ram_pct for m in metrics) / len(metrics)
+            max_disk = max(m.disk_pct for m in metrics)
+
+            prompt = (
+                f"VM: {vm.vcpu} vCPU / {vm.ram_mb} MB RAM / {vm.disk_gb} GB disk\n"
+                f"7-day averages: CPU={avg_cpu:.1f}% RAM={avg_ram:.1f}% Disk max={max_disk:.1f}%\n"
+                "Suggest an optimization if there is a clear opportunity."
+            )
+
+            from src.application.services.llm_service import LLMService
+            result = asyncio.get_event_loop().run_until_complete(
+                LLMService().suggest_optimization(prompt)
+            )
+
+            if result.get("confidence", 0) >= 0.7:
+                from src.infrastructure.models.vm_suggestion import VmSuggestion as VmSugg
+                import uuid
+                session.add(VmSugg(
+                    id=uuid.uuid4(),
+                    vm_id=vm.id,
+                    tenant_id=vm.tenant_id,
+                    suggestion_text=result["text"],
+                    suggested_config=result.get("config"),
+                    confidence=result["confidence"],
+                ))
+                analyzed += 1
+
+        session.commit()
+        logger.info(
+            "analyze_vm_optimizations: analyzed=%d skipped=%d", analyzed, skipped
+        )
+
+
 @celery_app.task(name="provision_vm_async")
 def provision_vm_async(
     vm_id: str,

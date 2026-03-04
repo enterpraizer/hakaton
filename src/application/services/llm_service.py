@@ -55,8 +55,66 @@ def _default_config() -> dict:
     }
 
 
+OPTIMIZATION_TOOL = {
+    "name": "suggest_optimization",
+    "description": "Suggest a VM resource optimization based on usage metrics",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string", "description": "Human-readable suggestion"},
+            "config": {
+                "type": "object",
+                "description": "Optional recommended config changes",
+                "properties": {
+                    "vcpu": {"type": "integer"},
+                    "ram_mb": {"type": "integer"},
+                    "disk_gb": {"type": "integer"},
+                },
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        },
+        "required": ["text", "confidence"],
+    },
+}
+
+OPTIMIZATION_SYSTEM_PROMPT = (
+    "You are a cloud infrastructure optimizer. Analyze the VM metrics for the last 7 days "
+    "and suggest ONE optimization if needed. Be specific and actionable. "
+    "Only suggest if you are confident (confidence > 0.7). "
+    "Use the suggest_optimization tool to return structured output."
+)
+
+
+def _default_optimization() -> dict:
+    return {"text": "No optimization needed", "confidence": 0.0, "config": None}
+
+
 class LLMService:
-    async def suggest_vm_config(self, description: str) -> dict:
+    async def suggest_optimization(self, metrics_prompt: str) -> dict:
+        """
+        Analyze VM metrics and suggest an optimization.
+        Returns: {text, confidence, config (optional)}
+        Falls back to no-op if API unavailable.
+        """
+        if not settings.llm.enabled or not settings.llm.anthropic_api_key:
+            return _default_optimization()
+
+        try:
+            client = anthropic.AsyncAnthropic(api_key=settings.llm.anthropic_api_key)
+            response = await client.messages.create(
+                model=settings.llm.model,
+                max_tokens=300,
+                tools=[OPTIMIZATION_TOOL],
+                tool_choice={"type": "tool", "name": "suggest_optimization"},
+                system=OPTIMIZATION_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": metrics_prompt}],
+            )
+            for block in response.content:
+                if block.type == "tool_use" and block.name == "suggest_optimization":
+                    return block.input
+            return _default_optimization()
+        except Exception:
+            return _default_optimization()
         """
         Calls Anthropic Claude with few-shot examples to suggest VM config.
         Returns: {vcpu, ram_mb, disk_gb, reasoning, confidence}

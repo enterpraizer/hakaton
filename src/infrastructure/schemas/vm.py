@@ -47,3 +47,16 @@ class VMSuggestResponse(BaseModel):
     disk_gb: int
     reasoning: str
     confidence: float
+
+
+class SuggestionResponse(BaseModel):
+    id: UUID
+    vm_id: UUID
+    tenant_id: UUID
+    suggestion_text: str
+    suggested_config: Optional[dict]
+    confidence: float
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

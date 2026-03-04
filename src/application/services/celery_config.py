@@ -23,4 +23,8 @@ celery_app.conf.beat_schedule = {
         "task": "collect_vm_metrics",
         "schedule": 300.0,
     },
+    "analyze-vm-optimizations": {
+        "task": "analyze_vm_optimizations",
+        "schedule": 3600.0,
+    },
 }
