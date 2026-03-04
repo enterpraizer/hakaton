@@ -84,8 +84,8 @@ async def get_network_summary(
     from src.infrastructure.models.virtual_network import VirtualNetwork, NetworkStatus
     total = await network_repo.count(tenant_id=tenant.id)
     active = await network_repo.count(
-        tenant_id=tenant.id,
-        *[VirtualNetwork.status == NetworkStatus.ACTIVE],
+        tenant.id,
+        VirtualNetwork.status == NetworkStatus.ACTIVE,
     )
     return {"total": total, "active": active}
 
