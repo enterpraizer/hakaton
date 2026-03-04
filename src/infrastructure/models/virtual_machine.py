@@ -3,13 +3,12 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-import sqlalchemy as sa
-from sqlalchemy import DateTime, Integer, String, Text, func, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import UUID as Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from src.infrastructure.models.base import Base
 
 
 class VMStatus(enum.StrEnum):
@@ -21,29 +20,32 @@ class VMStatus(enum.StrEnum):
 
 class VirtualMachine(Base):
     __tablename__ = "virtual_machines"
+    __table_args__ = (
+        Index("ix_vm_tenant_status", "tenant_id", "status"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
+        server_default=text("gen_random_uuid()")
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
-        sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+        ForeignKey("tenants.id", ondelete="RESTRICT"),
         nullable=False,
-        index=True,
+        index=True
     )
     owner_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
-        sa.ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[VMStatus] = mapped_column(
-        PgEnum(VMStatus, name="vm_status", create_type=True),
-        nullable=False,
+        PgEnum(VMStatus, name="vmstatus", create_type=True),
         default=VMStatus.PENDING,
+        nullable=False
     )
     vcpu: Mapped[int] = mapped_column(Integer, nullable=False)
     ram_mb: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -51,13 +53,15 @@ class VirtualMachine(Base):
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     container_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     container_name: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-    created_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime, server_default=func.now()
-    )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
-    __table_args__ = (
-        sa.Index("ix_vm_tenant_status", "tenant_id", "status"),
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="vms")
+    owner: Mapped["User"] = relationship("User", back_populates="vms")
+    networks: Mapped[list["VirtualNetwork"]] = relationship(
+        "VirtualNetwork",
+        secondary="vm_network_association",
+        back_populates="vms"
     )

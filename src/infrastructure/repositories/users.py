@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from select import select
+from sqlalchemy import select
 
 from sqlalchemy import update
 from src.infrastructure.models import Tenant

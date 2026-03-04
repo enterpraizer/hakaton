@@ -42,6 +42,7 @@ class User(Base):
         nullable=False,
         default=Roles.USER
     )
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, server_default=func.now())
     owned_tenants: Mapped[list["Tenant"]] = relationship(
         "Tenant", back_populates="owner"
@@ -52,4 +53,3 @@ class User(Base):
     audit_logs: Mapped[list["AuditLog"]] = relationship(
         "AuditLog", back_populates="user"
     )
-

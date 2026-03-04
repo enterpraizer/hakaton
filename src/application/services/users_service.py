@@ -35,7 +35,7 @@ class UserService:
                       ordering: str | None = None,
                       role: str | None = None) -> List[UserResponse]:
         request_user = await self.get(User.email == request_user.email)
-        if not request_user.is_active:
+        if not request_user.role == 'admin':
             raise exceptions.UserPermissionDenied(
                 'Пользователь не имеет прав на это действие'
             )

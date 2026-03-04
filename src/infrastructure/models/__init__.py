@@ -1,3 +1,4 @@
+from .audit_log import AuditLog
 from .users import User
 from .tenant import Tenant
 from .resource_quota import ResourceQuota
@@ -14,5 +15,5 @@ __all__ = [
     "VMStatus",
     "VirtualNetwork",
     "NetworkStatus",
-    "vm_network_association",
+    "AuditLog",
 ]

@@ -1,3 +1,4 @@
+from typing import Type
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -21,7 +22,7 @@ async def get_tenant_id(request: Request) -> UUID:
 async def get_current_tenant(
     tenant_id: UUID = Depends(get_tenant_id),
     session: AsyncSession = Depends(get_db),
-) -> Tenant:
+) -> Type[Tenant] | None:
     tenant = await session.get(Tenant, tenant_id)
     if not tenant or not tenant.is_active:
         raise HTTPException(
