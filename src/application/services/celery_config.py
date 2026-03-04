@@ -19,4 +19,8 @@ celery_app.conf.beat_schedule = {
         "task": "cleanup_terminated_vms",
         "schedule": 3600.0,
     },
+    "collect-vm-metrics": {
+        "task": "collect_vm_metrics",
+        "schedule": 300.0,
+    },
 }

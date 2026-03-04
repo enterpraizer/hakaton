@@ -105,6 +105,43 @@ def cleanup_terminated_vms() -> None:
             logger.info("cleanup_terminated_vms: removed %d old terminated VMs", count)
 
 
+@celery_app.task(name="collect_vm_metrics")
+def collect_vm_metrics() -> None:
+    """
+    Periodic task (every 5min): simulate and store metrics for all RUNNING VMs.
+    Uses a sync SQLAlchemy session — writes directly to vm_metrics table.
+    """
+    import asyncio
+    from uuid import uuid4
+    from datetime import datetime, timezone
+    import math, random
+
+    with Session(_sync_engine) as session:
+        vms = session.execute(
+            select(VirtualMachine).where(VirtualMachine.status == VMStatus.RUNNING)
+        ).scalars().all()
+
+        for vm in vms:
+            age_hours = (datetime.now(timezone.utc) - vm.created_at.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+            base_cpu = random.uniform(5, 80)
+            daily_cycle = 10 * math.sin(2 * math.pi * age_hours / 24)
+            cpu_pct = max(1.0, min(99.0, base_cpu + daily_cycle + random.uniform(-5, 5)))
+            ram_pct = min(99.0, random.uniform(20, 85) + random.uniform(-5, 5))
+            disk_pct = min(99.0, 30 + (age_hours * 0.1) + random.uniform(-2, 2))
+
+            from src.infrastructure.models.vm_metrics import VmMetrics
+            session.add(VmMetrics(
+                id=uuid4(),
+                vm_id=vm.id,
+                cpu_pct=round(cpu_pct, 1),
+                ram_pct=round(ram_pct, 1),
+                disk_pct=round(disk_pct, 1),
+            ))
+
+        session.commit()
+        logger.info("collect_vm_metrics: recorded metrics for %d VMs", len(vms))
+
+
 @celery_app.task(name="provision_vm_async")
 def provision_vm_async(
     vm_id: str,
