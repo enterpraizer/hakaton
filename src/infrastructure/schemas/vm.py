@@ -35,3 +35,15 @@ class VMResponse(BaseModel):
 class VMListResponse(BaseModel):
     items: list[VMResponse]
     total: int
+
+
+class VMSuggestRequest(BaseModel):
+    description: str = Field(..., min_length=10, max_length=1000)
+
+
+class VMSuggestResponse(BaseModel):
+    vcpu: int
+    ram_mb: int
+    disk_gb: int
+    reasoning: str
+    confidence: float

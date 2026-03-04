@@ -5,12 +5,13 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 
 from src.application.services.auth_service import AuthService
+from src.application.services.llm_service import LLMService
 from src.application.services.quota_service import QuotaExceededError
 from src.application.services.vm_service import VMService
 from src.infrastructure.models.tenant import Tenant
 from src.infrastructure.models.virtual_machine import VMStatus
 from src.infrastructure.schemas.users import UserRequest
-from src.infrastructure.schemas.vm import VMCreate, VMListResponse, VMResponse, VMUpdate
+from src.infrastructure.schemas.vm import VMCreate, VMListResponse, VMResponse, VMSuggestRequest, VMSuggestResponse, VMUpdate
 from src.interfaces.api.dependencies.tenant import get_current_tenant
 
 vms_router = APIRouter(prefix="/vms", tags=["Virtual Machines"])
@@ -54,6 +55,21 @@ async def create_vm(
                 "available": e.available,
             },
         )
+
+
+@vms_router.post(
+    "/suggest",
+    response_model=VMSuggestResponse,
+    summary="Get AI-powered VM configuration recommendation",
+)
+async def suggest_vm_config(
+    body: VMSuggestRequest,
+    current_user: UserRequest = Depends(AuthService.get_current_user),
+    llm: LLMService = Depends(),
+) -> VMSuggestResponse:
+    """Returns LLM-suggested VM config based on a free-text workload description."""
+    result = await llm.suggest_vm_config(body.description)
+    return VMSuggestResponse(**result)
 
 
 @vms_router.get("/{vm_id}", response_model=VMResponse, status_code=status.HTTP_200_OK)
