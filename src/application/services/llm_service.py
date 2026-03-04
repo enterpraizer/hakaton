@@ -1,48 +1,46 @@
-import anthropic
+import json
+
+from google import genai
+from google.genai import types
 
 from src.infrastructure.scripts.generate_synthetic_data import SYNTHETIC_DATASET
 from src.settings import settings
 
-VM_CONFIG_TOOL = {
-    "name": "suggest_vm_config",
-    "description": "Suggest optimal VM configuration for the described workload",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "vcpu": {"type": "integer", "minimum": 1, "maximum": 32},
-            "ram_mb": {"type": "integer", "minimum": 512, "maximum": 65536},
-            "disk_gb": {"type": "integer", "minimum": 10, "maximum": 500},
-            "reasoning": {"type": "string"},
-            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-        },
-        "required": ["vcpu", "ram_mb", "disk_gb", "reasoning", "confidence"],
-    },
-}
-
-# Pick 5 diverse examples spread across the 6 categories (one per category, skip game servers)
-_INDICES = [0, 10, 20, 30, 50]  # Web, DB, ML, CI/CD, Microservices
+# 5 diverse few-shot examples (Web, DB, ML, CI/CD, Microservices)
+_INDICES = [0, 10, 20, 30, 50]
 FEW_SHOT_EXAMPLES = [SYNTHETIC_DATASET[i] for i in _INDICES]
 
 
-def _build_system_prompt(examples: list[dict]) -> str:
-    lines = [
-        "You are a cloud infrastructure expert. Given a workload description, "
-        "suggest the optimal VM configuration using the suggest_vm_config tool.\n",
-        "Examples of good configurations:",
-    ]
-    for ex in examples:
+def _few_shot_block() -> str:
+    lines = ["Examples of correct configurations:"]
+    for ex in FEW_SHOT_EXAMPLES:
         lines.append(
             f'  "{ex["description"]}" → {ex["vcpu"]} vCPU, {ex["ram_mb"]} MB RAM, {ex["disk_gb"]} GB disk'
         )
-    lines.append("\nAlways use the tool to return structured output.")
     return "\n".join(lines)
 
 
-def _parse_tool_response(response) -> dict:
-    for block in response.content:
-        if block.type == "tool_use" and block.name == "suggest_vm_config":
-            return block.input
-    return _default_config()
+VM_CONFIG_SYSTEM = (
+    "You are a cloud infrastructure expert. Given a workload description, "
+    "suggest the optimal VM configuration.\n\n"
+    + _few_shot_block()
+    + "\n\nRespond ONLY with valid JSON matching exactly this schema (no markdown, no extra text):\n"
+    '{"vcpu": int, "ram_mb": int, "disk_gb": int, "reasoning": str, "confidence": float}'
+)
+
+OPTIMIZATION_SYSTEM = (
+    "You are a cloud infrastructure optimizer. Analyze the VM metrics for the last 7 days "
+    "and suggest ONE optimization if needed. Be specific and actionable. "
+    "Only suggest if confidence > 0.7.\n\n"
+    "Respond ONLY with valid JSON matching exactly this schema (no markdown, no extra text):\n"
+    '{"text": str, "confidence": float, "config": {"vcpu": int, "ram_mb": int, "disk_gb": int} or null}'
+)
+
+_GENERATE_CONFIG = types.GenerateContentConfig(
+    response_mime_type="application/json",
+    max_output_tokens=300,
+    temperature=0.2,
+)
 
 
 def _default_config() -> dict:
@@ -55,84 +53,57 @@ def _default_config() -> dict:
     }
 
 
-OPTIMIZATION_TOOL = {
-    "name": "suggest_optimization",
-    "description": "Suggest a VM resource optimization based on usage metrics",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "text": {"type": "string", "description": "Human-readable suggestion"},
-            "config": {
-                "type": "object",
-                "description": "Optional recommended config changes",
-                "properties": {
-                    "vcpu": {"type": "integer"},
-                    "ram_mb": {"type": "integer"},
-                    "disk_gb": {"type": "integer"},
-                },
-            },
-            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-        },
-        "required": ["text", "confidence"],
-    },
-}
-
-OPTIMIZATION_SYSTEM_PROMPT = (
-    "You are a cloud infrastructure optimizer. Analyze the VM metrics for the last 7 days "
-    "and suggest ONE optimization if needed. Be specific and actionable. "
-    "Only suggest if you are confident (confidence > 0.7). "
-    "Use the suggest_optimization tool to return structured output."
-)
-
-
 def _default_optimization() -> dict:
     return {"text": "No optimization needed", "confidence": 0.0, "config": None}
 
 
 class LLMService:
+    async def suggest_vm_config(self, description: str) -> dict:
+        """
+        Calls Gemini to suggest VM config based on workload description.
+        Returns: {vcpu, ram_mb, disk_gb, reasoning, confidence}
+        Falls back to defaults if API unavailable or disabled.
+        """
+        if not settings.llm.enabled or not settings.llm.gemini_api_key:
+            return _default_config()
+
+        try:
+            client = genai.Client(api_key=settings.llm.gemini_api_key)
+            response = await client.aio.models.generate_content(
+                model=settings.llm.model,
+                contents=description,
+                config=types.GenerateContentConfig(
+                    system_instruction=VM_CONFIG_SYSTEM,
+                    response_mime_type="application/json",
+                    max_output_tokens=300,
+                    temperature=0.2,
+                ),
+            )
+            return json.loads(response.text)
+        except Exception:
+            return _default_config()
+
     async def suggest_optimization(self, metrics_prompt: str) -> dict:
         """
-        Analyze VM metrics and suggest an optimization.
+        Analyzes VM metrics and suggests an optimization.
         Returns: {text, confidence, config (optional)}
         Falls back to no-op if API unavailable.
         """
-        if not settings.llm.enabled or not settings.llm.anthropic_api_key:
+        if not settings.llm.enabled or not settings.llm.gemini_api_key:
             return _default_optimization()
 
         try:
-            client = anthropic.AsyncAnthropic(api_key=settings.llm.anthropic_api_key)
-            response = await client.messages.create(
+            client = genai.Client(api_key=settings.llm.gemini_api_key)
+            response = await client.aio.models.generate_content(
                 model=settings.llm.model,
-                max_tokens=300,
-                tools=[OPTIMIZATION_TOOL],
-                tool_choice={"type": "tool", "name": "suggest_optimization"},
-                system=OPTIMIZATION_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": metrics_prompt}],
+                contents=metrics_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=OPTIMIZATION_SYSTEM,
+                    response_mime_type="application/json",
+                    max_output_tokens=300,
+                    temperature=0.2,
+                ),
             )
-            for block in response.content:
-                if block.type == "tool_use" and block.name == "suggest_optimization":
-                    return block.input
-            return _default_optimization()
+            return json.loads(response.text)
         except Exception:
             return _default_optimization()
-        """
-        Calls Anthropic Claude with few-shot examples to suggest VM config.
-        Returns: {vcpu, ram_mb, disk_gb, reasoning, confidence}
-        Falls back to default config if API unavailable or disabled.
-        """
-        if not settings.llm.enabled or not settings.llm.anthropic_api_key:
-            return _default_config()
-
-        try:
-            client = anthropic.AsyncAnthropic(api_key=settings.llm.anthropic_api_key)
-            response = await client.messages.create(
-                model=settings.llm.model,
-                max_tokens=300,
-                tools=[VM_CONFIG_TOOL],
-                tool_choice={"type": "tool", "name": "suggest_vm_config"},
-                system=_build_system_prompt(FEW_SHOT_EXAMPLES),
-                messages=[{"role": "user", "content": description}],
-            )
-            return _parse_tool_response(response)
-        except Exception:
-            return _default_config()
