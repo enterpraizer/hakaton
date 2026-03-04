@@ -4,7 +4,6 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, func, text
 from sqlalchemy.dialects.postgresql import UUID as Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from src.infrastructure.models.base import Base
 from src.infrastructure.models.tenant import Tenant
 

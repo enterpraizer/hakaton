@@ -3,13 +3,15 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, String, func, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import UUID as Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from . import Tenant, User, VirtualNetwork
+from src.infrastructure.models.tenant import Tenant
+from src.infrastructure.models.users import User
+from src.infrastructure.models.virtual_network import VirtualNetwork
 
-from .base import Base
+from src.infrastructure.models.base import Base
 
 
 class VMStatus(enum.StrEnum):

@@ -6,9 +6,9 @@ from sqlalchemy import DateTime, ForeignKey, JSON, String, func, text
 from sqlalchemy.dialects.postgresql import UUID as Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
-from .tenant import Tenant
-from .users import User
+from src.infrastructure.models.base import Base
+from src.infrastructure.models.tenant import Tenant
+from src.infrastructure.models.users import User
 
 
 class AuditLog(Base):

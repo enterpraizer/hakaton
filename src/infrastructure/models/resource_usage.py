@@ -4,9 +4,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, func, text
 from sqlalchemy.dialects.postgresql import UUID as Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from . import Tenant
-
-from .base import Base
+from src.infrastructure.models.tenant import Tenant
+from src.infrastructure.models.base import Base
 
 
 class ResourceUsage(Base):
