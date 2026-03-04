@@ -9,9 +9,6 @@ from sqlalchemy.dialects.postgresql import UUID as Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.models.base import Base
-from src.infrastructure.models.tenant import Tenant
-from src.infrastructure.models.virtual_machine import VirtualMachine
-from src.infrastructure.models.audit_log import AuditLog
 
 
 class Roles(enum.StrEnum):
