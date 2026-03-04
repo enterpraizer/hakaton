@@ -9,7 +9,7 @@ from src.application.services.auth_service import AuthService, get_auth_service
 from src.infrastructure.models.users import User
 from src.infrastructure.schemas.auth import RefreshToken, Tokens, ChangePassword
 from src.infrastructure.schemas.users import CreateUser, UserResponse, UserRequest
-from src.infrastructure.schemas.tenant import
+
 
 auth_router = APIRouter(prefix='/auth', tags=['auth'])
 
