@@ -1,5 +1,6 @@
 volumes:
   pg_data:
+  redis_data:
 
 services:
   db:
@@ -15,11 +16,25 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
   backend:
     build: .
     env_file: .env
     depends_on:
-      accounts-db:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
@@ -29,5 +44,17 @@ services:
       start_period: 30s
     ports:
       - 8000:8000
+    volumes:
+      - .:/app
+
+  celery:
+    build: .
+    command: celery -A src.application.services.celery_config.celery_app worker --loglevel=info
+    env_file: .env
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
     volumes:
       - .:/app
