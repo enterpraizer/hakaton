@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy import DateTime, Integer, String, Text, func, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import UUID as Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -57,6 +57,9 @@ class VirtualMachine(Base):
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
+
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="vms")
+    owner: Mapped["User"] = relationship("User", back_populates="vms")
 
     __table_args__ = (
         sa.Index("ix_vm_tenant_status", "tenant_id", "status"),

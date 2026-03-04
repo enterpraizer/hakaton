@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, String, Table, Column, func, text
 from sqlalchemy.dialects.postgresql import ENUM as PgEnum
 from sqlalchemy.dialects.postgresql import UUID as Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -51,6 +51,8 @@ class VirtualNetwork(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, server_default=func.now()
     )
+
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="networks")
 
     __table_args__ = (
         sa.UniqueConstraint("tenant_id", "name", name="uq_network_tenant_name"),

@@ -6,7 +6,7 @@ from typing import Optional
 import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID as Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -32,3 +32,8 @@ class Tenant(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime, server_default=func.now()
     )
+
+    owner: Mapped["User"] = relationship("User", back_populates="owned_tenants")
+    vms: Mapped[list["VirtualMachine"]] = relationship("VirtualMachine", back_populates="tenant")
+    networks: Mapped[list["VirtualNetwork"]] = relationship("VirtualNetwork", back_populates="tenant")
+    audit_logs: Mapped[list["AuditLog"]] = relationship("AuditLog", back_populates="tenant")
