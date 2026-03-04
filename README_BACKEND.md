@@ -221,7 +221,7 @@ and pass tenant.id to all service/repository calls for isolation.
 ---
 
 ### 1.3 [Dev-3] Auth: Embed tenant_id in JWT + Tenant Assignment
-- [ ] ⚠️ **ЧАСТИЧНО** — JWT содержит `tenant_id` ✅, `refresh()` переносит его ✅, поле `tenant_id` в `UserRequest` ✅ | но `tenant_service.py` ❌, эндпоинт `POST /auth/tenant` ❌, импорт из `schemas.tenant` не дописан ❌ | **Demonstrates: Multi-tenancy, Security** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — JWT содержит `tenant_id` ✅, `refresh()` переносит его ✅, поле `tenant_id` в `UserRequest` ✅, `tenant_service.py` ✅, эндпоинт `POST /auth/tenant` ✅, `schemas/tenant.py` (TenantCreate/Response/ListResponse) ✅ | **Demonstrates: Multi-tenancy, Security** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -350,7 +350,7 @@ Create src/infrastructure/repositories/usage_repository.py:
 ---
 
 ### 1.5 [Dev-4] Hypervisor Service (Docker SDK Mock)
-- [ ] ❌ **НЕ СДЕЛАНО** — `hypervisor_service.py` не существует | **Demonstrates: Hypervisor Simulation** | ⏱ 3h
+- [x] ✅ **СДЕЛАНО** — `hypervisor_service.py` ✅, `docker>=7.0.0` в `pyproject.toml` ✅, graceful degradation (mock режим без Docker) ✅, `provision_vm` / `start_vm` / `stop_vm` / `terminate_vm` / `get_vm_status` / `list_tenant_containers` ✅, `container.reload()` для корректного IP ✅ | **Demonstrates: Hypervisor Simulation** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -462,7 +462,7 @@ class HypervisorService:
 ---
 
 ### 1.6 [Dev-5] docker-compose + .env.example + Makefile
-- [ ] ⚠️ **ЧАСТИЧНО** — `docker-compose.yaml` есть ✅, `.env.example` есть но значения пустые ⚠️ | Docker socket не смонтирован ❌, `celery-beat` сервис отсутствует ❌, `Makefile` не создан ❌ | **Demonstrates: DevOps** | ⏱ 1h
+- [x] ✅ **СДЕЛАНО** — `docker-compose.yaml` обновлён ✅: Docker socket смонтирован, `celery-beat` сервис добавлен, healthcheck на `/health` ✅ | `.env.example` заполнен всеми переменными ✅ | `Makefile` создан (dev/down/migrate/mm/test/logs/shell/pull-image) ✅ | **Demonstrates: DevOps** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -527,7 +527,7 @@ Generate Makefile:
 ## DAY 2 — VM Lifecycle, Quota Engine & Networking
 
 ### 2.1 [Dev-4] Quota Service (enforce + track)
-- [ ] ❌ **НЕ СДЕЛАНО** — `quota_service.py` не существует | **Demonstrates: Resource Distribution Control** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `quota_service.py` ✅, `QuotaExceededError` ✅, `check_and_reserve()` (атомарная валидация) ✅, `release()` ✅, `get_usage_summary()` ✅, `update_quota()` (admin only) ✅, `CASE WHEN` вместо PG-only `GREATEST()` для SQLite-совместимости ✅ | **Demonstrates: Resource Distribution Control** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -591,7 +591,7 @@ class QuotaService:
 ---
 
 ### 2.2 [Dev-4] VM Service + Full Lifecycle
-- [ ] ❌ **НЕ СДЕЛАНО** — `vm_service.py` стаб ❌, `schemas/vm.py` стаб ❌ | **Demonstrates: Hypervisor, Multi-tenancy, Resource Control** | ⏱ 3h
+- [x] ✅ **СДЕЛАНО** — `vm_service.py` ✅ (create/start/stop/terminate/get/list/update с audit logging) | `schemas/vm.py` ✅ (VMCreate/VMUpdate/VMResponse/VMListResponse) | `AuditService` инжектирован ✅ | дублирующиеся методы удалены ✅ | **Demonstrates: Hypervisor, Multi-tenancy, Resource Control** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -677,7 +677,7 @@ Also create src/infrastructure/schemas/vm.py with Pydantic v2:
 ---
 
 ### 2.3 [Dev-1] VM Router (full REST + lifecycle actions)
-- [ ] ❌ **НЕ СДЕЛАНО** — `routers/vms.py` стаб | **Demonstrates: Multi-tenancy, Hypervisor** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `routers/vms.py` ✅: 7 эндпоинтов (GET/POST /vms, GET/start/stop/DELETE/PATCH /vms/{id}), tenant isolation ✅, `QuotaExceededError → 429` ✅, зарегистрирован в `app.py` ✅ | **Demonstrates: Multi-tenancy, Hypervisor** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -711,7 +711,7 @@ Replace stub in src/interfaces/api/routers/vms.py:
 ---
 
 ### 2.4 [Dev-2] Network Service + Router (VPC/Subnet)
-- [ ] ❌ **НЕ СДЕЛАНО** — `network_service.py` стаб ❌, `schemas/network.py` стаб ❌, `routers/networks.py` стаб ❌ | `NetworkRepository` ✅ (единственное что готово) | **Demonstrates: Multi-tenancy, Networking** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `network_service.py` ✅ (CIDR overlap check с `ipaddress` модулем, attach/detach VM с tenant isolation) | `schemas/network.py` ✅ (CIDR regex валидация) | `routers/networks.py` ✅ (7 эндпоинтов) | `is_public` поле добавлено в модель ✅ | **Demonstrates: Multi-tenancy, Networking** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -754,7 +754,7 @@ Replace stub in src/interfaces/api/routers/networks.py:
 ---
 
 ### 2.5 [Dev-3] Admin Router (Tenant + Quota management)
-- [ ] ❌ **НЕ СДЕЛАНО** — `routers/admin.py` стаб ❌, `dependencies/permissions.py` ❌, `schemas/tenant.py` стаб ❌, `schemas/quota.py` стаб ❌ | **Demonstrates: Resource Distribution Control, Multi-tenancy** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `routers/admin.py` ✅ (9 эндпоинтов: tenant CRUD, quota CRUD, /stats, /vms cross-tenant) | `dependencies/permissions.py` ✅ (`require_admin`) | `schemas/tenant.py` ✅ | `schemas/quota.py` ✅ (QuotaUpdate/QuotaResponse/UsageSummaryResponse) | **Demonstrates: Resource Distribution Control, Multi-tenancy** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -813,7 +813,7 @@ Replace stub in src/interfaces/api/routers/admin.py:
 ---
 
 ### 2.6 [Dev-5] Celery Tasks: VM Status Sync
-- [ ] ❌ **НЕ СДЕЛАНО** — в `tasks.py` только `send_confirmation_email` ❌, `beat_schedule` в `celery_config.py` отсутствует ❌ | **Demonstrates: Hypervisor, Background Tasks** | ⏱ 1h
+- [x] ✅ **СДЕЛАНО** — `tasks.py` ✅: `sync_vm_statuses` (каждые 60с), `cleanup_terminated_vms` (каждый час), `provision_vm_async` | `beat_schedule` в `celery_config.py` ✅ | sync psycopg2 engine для Celery workers ✅ | `celery-beat` сервис в `docker-compose.yaml` ✅ | **Demonstrates: Hypervisor, Background Tasks** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -862,7 +862,7 @@ Add Celery Beat schedule in src/application/services/celery_config.py:
 ## DAY 3 — Monitoring, Security & Production
 
 ### 3.1 [Dev-1] Resource Usage Dashboard Endpoints
-- [ ] ❌ **НЕ СДЕЛАНО** — `routers/dashboard.py` ❌, `audit_service.py` ❌ | `AuditLog` модель ✅ + `AuditLogRepository` ✅ (единственное что готово) | **Demonstrates: Resource Control, Monitoring** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `routers/dashboard.py` ✅ (4 эндпоинта: /usage с Redis cache TTL=30s, /vms/summary, /networks/summary, /activity) | `audit_service.py` ✅ (silent error handling) | audit вызовы в `vm_service` и `network_service` ✅ | Redis fail-open ✅ | **Demonstrates: Resource Control, Monitoring** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -913,7 +913,7 @@ Include dashboard_router in app.py.
 ---
 
 ### 3.2 [Dev-3] Security: Rate Limiting + Security Headers
-- [ ] ❌ **НЕ СДЕЛАНО** — папка `middleware/` не создана, ни один middleware не реализован | **Demonstrates: Security** | ⏱ 2h
+- [x] ✅ **СДЕЛАНО** — `middleware/rate_limit.py` ✅ (sliding window, 100/min общий, 10/min для /auth, Retry-After header) | `middleware/logging_middleware.py` ✅ (пропуск /health) | `middleware/security_headers.py` ✅ | `app.py` обновлён ✅: полный стек middleware + 6 глобальных exception handlers (QuotaExceeded→429, UserNotFound→404, etc.) | **Demonstrates: Security** | ⏱ 2h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -965,7 +965,7 @@ Add global exception handlers for:
 ---
 
 ### 3.3 [Dev-2] Alembic Migrations for all new models
-- [ ] ❌ **НЕ СДЕЛАНО** — существует только init-миграция (`users` таблица), миграция для Tenant/VM/Network/Quota/Usage/AuditLog не создана | **Demonstrates: DevOps** | ⏱ 1h
+- [x] ✅ **СДЕЛАНО** — `alembic/env.py` ✅: 8 моделей импортированы | миграция `60672e32d54a_iaas_components.py` исправлена ✅: ENUM типы создаются до таблиц, `is_public` добавлен, ENUM drops в downgrade | `src/infrastructure/seed.py` ✅: идемпотентный seed (admin user, demo tenant, quota, usage, 2 VMs) | **Demonstrates: DevOps** | ⏱ 1h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
@@ -998,7 +998,7 @@ Generate a seed data script at src/infrastructure/seed.py:
 ---
 
 ### 3.4 [Dev-4] Integration Tests: Full Tenant Isolation Scenario
-- [ ] ❌ **НЕ СДЕЛАНО** — папка `tests/` не создана | **Demonstrates: Multi-tenancy, Security** | ⏱ 3h
+- [x] ✅ **СДЕЛАНО** — `tests/conftest.py` ✅ (SQLite in-memory, env vars до импортов, фикстуры: client/tenant_a/tenant_b/admin) | `tests/test_tenant_isolation.py` ✅ (6 тестов: VM/network isolation, quota enforcement, quota release) | `tests/test_vm_lifecycle.py` ✅ (7 тестов: полный lifecycle, 429 details, ip_address) | **13/13 тестов проходят** ✅ | `aiosqlite` добавлен в `pyproject.toml` ✅ | **Demonstrates: Multi-tenancy, Security** | ⏱ 3h
 
 <details>
 <summary>📎 Copilot Prompt</summary>
