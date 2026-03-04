@@ -1,4 +1,7 @@
+from uuid import UUID
+
 from fastapi import Depends
+from uuid import UUID
 
 from src.application.services.llm_service import LLMService
 from src.infrastructure.models.virtual_machine import VirtualMachine
@@ -52,8 +55,14 @@ class SuggestionService:
     async def get_pending(self, vm_id) -> list[VmSuggestion]:
         return await self._suggestions.get_pending(vm_id=vm_id)
 
-    async def accept(self, suggestion_id, vm_id) -> VmSuggestion | None:
+    async def accept(self, suggestion_id: UUID, vm_id: UUID, tenant_id: UUID) -> VmSuggestion | None:
+        suggestion = await self._suggestions.get_by_id(suggestion_id, vm_id)
+        if not suggestion or suggestion.tenant_id != tenant_id:
+            return None
         return await self._suggestions.set_status(suggestion_id, SuggestionStatus.ACCEPTED)
 
-    async def dismiss(self, suggestion_id, vm_id) -> VmSuggestion | None:
+    async def dismiss(self, suggestion_id: UUID, vm_id: UUID, tenant_id: UUID) -> VmSuggestion | None:
+        suggestion = await self._suggestions.get_by_id(suggestion_id, vm_id)
+        if not suggestion or suggestion.tenant_id != tenant_id:
+            return None
         return await self._suggestions.set_status(suggestion_id, SuggestionStatus.DISMISSED)
