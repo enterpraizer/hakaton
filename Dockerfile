@@ -19,4 +19,4 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY . .
 
-CMD ["uvicorn", "src.interfaces.api.app:app", "--loop", "uvloop", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.interfaces.api.app:app", "--loop", "uvloop", "--host", "0.0.0.0", "--port", "8000"]

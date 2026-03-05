@@ -1,0 +1,58 @@
+volumes:
+  pg_data:
+  redis_data:
+
+services:
+  db:
+    image: postgres:17.0
+    env_file: .env
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-enterpraizer/backend}:latest
+    env_file: .env
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  celery:
+    image: ghcr.io/${GITHUB_REPOSITORY:-enterpraizer/backend}:latest
+    command: celery -A src.application.services.celery_config.celery_app worker --loglevel=info
+    env_file: .env
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    image: ghcr.io/${GITHUB_REPOSITORY:-enterpraizer/backend}:latest
+    command: celery -A src.application.services.celery_config.celery_app beat --loglevel=info
+    env_file: .env
+    restart: always
+    depends_on:
+      - celery
